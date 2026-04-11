@@ -3,7 +3,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 from urllib.parse import quote_plus
 
 # encoding password
-password = quote_plus("#de455&4kwIl^84")
+password = quote_plus("hehe")
 
 # creating engine
 DATABASE_URL = f"mysql+pymysql://root:{password}@localhost/ngo_resource_db"
