@@ -1,36 +1,57 @@
-from fastapi import FastAPI, HTTPException, status, Response, Depends
-from pydantic import BaseModel
-import pymysql
-import time 
-from sqlalchemy.orm import Session
-
-app = FastAPI()
-
-class volunteer(BaseModel):
-    name: str
-    phone: str
-    skill: str
-    availability: str
-    location: str
-
-while True:
-    try: 
-        conn = pymysql.connect(
-            host="localhost",
-            user="root",
-            password="#de455&4kwIl^84",
-            database="ngo_resource_db",
-            cursorclass=pymysql.cursors.DictCursor
-        )
-        cursor = conn.cursor()
-        print("Database connection was successful!")
-        break
-
-    except Exception as error:
-        print("Connecting to database failed")
-        print("Error:", error)
-        time.sleep(5)
+from sqlalchemy import Column, String, Integer, Boolean
+from sqlalchemy.sql.sqltypes import TIMESTAMP
+from sqlalchemy.sql import func
+from ..database import Base
 
 
+class Volunteer(Base):
+    __tablename__ = "volunteers"
 
+    id = Column(
+        Integer,
+        primary_key=True,
+        autoincrement=True,
+        nullable=False
+    )
 
+    name = Column(
+        String(200),
+        nullable=False
+    )
+
+    phone = Column(
+        String(20),
+        nullable=False
+    )
+
+    email = Column(
+        String(255),
+        unique=True,
+        nullable=True
+    )
+
+    address = Column(
+        String(5000),
+        nullable=True,
+    )
+
+    skills = Column(
+        String(1000),
+        nullable=False
+    )
+
+    role = Column(
+        String(1000),
+        nullable=True,
+    )
+
+    availability = Column(
+        Boolean,
+        default=True
+    )
+
+    registered = Column(
+        TIMESTAMP,
+        nullable=False,
+        server_default=func.now()
+    )
