@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, status, Response, Depends
 from sqlalchemy.orm import Session
 from app.models.volunteers import Volunteers       #  ----> SQLAlchemy Model
-from app.database import engine, get_db            #  ----> database
+from app.database import get_db                    #  ----> database
 from app.schemas.volunteers import Volunteer       #  ----> volunteer Schema
 
 
