@@ -1,12 +1,17 @@
+import os
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from urllib.parse import quote_plus
 
 # encoding password
-password = quote_plus("hehe")
+load_dotenv()
+db_user = os.getenv("DB_USER")
+db_password = quote_plus(os.getenv("DB_PASSWORD"))
+db_name = os.getenv("DB_NAME")
 
 # creating engine
-DATABASE_URL = f"mysql+pymysql://root:{password}@localhost/ngo_resource_db"
+DATABASE_URL = f"mysql+pymysql://{db_user}:{db_password}@localhost/{db_name}"
 engine = create_engine(DATABASE_URL)
 
 # creating base class
