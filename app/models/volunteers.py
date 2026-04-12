@@ -4,7 +4,7 @@ from sqlalchemy.sql import func
 from ..database import Base
 
 
-class Volunteer(Base):
+class Volunteers(Base):
     __tablename__ = "volunteers"
 
     id = Column(
