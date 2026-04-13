@@ -3,7 +3,7 @@ from sqlalchemy.sql.sqltypes import TIMESTAMP
 from sqlalchemy.sql import func
 from ..database import Base
 
-class Request(Base):
+class Requests(Base):
     __tablename__ = "ngo_requests"
 
     id = Column(

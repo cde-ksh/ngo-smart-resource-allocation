@@ -1,12 +1,12 @@
 from pydantic import BaseModel
 
 class Volunteer(BaseModel):
-    full_name: str
+    name: str
     phone: str
-    email: str
+    email: str | None = None
     state: str
     district: str
     skills: str
-    role: str
-    availability: str
-    transport: str
+    role: str 
+    availability: bool = True
+    transport: str 
