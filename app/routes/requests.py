@@ -1,14 +1,17 @@
-from fastapi import FastAPI, HTTPException, status, Response, Depends
+from fastapi import APIRouter, HTTPException, status, Response, Depends
 from sqlalchemy.orm import Session 
 from app.models.requests import Requests
 from app.schemas.requests import Request
 from app.database import get_db 
 
 
-app = FastAPI()
+router = APIRouter(
+    prefix="/requests",
+    tags=["Requests"]
+)
 
 # creating requests
-@app.post('/requests')
+@router.post('/requests')
 def create_requests(request: Request, db: Session = Depends(get_db)):
     new_request = Requests(**request.model_dump())
     db.add(new_request)
@@ -18,14 +21,14 @@ def create_requests(request: Request, db: Session = Depends(get_db)):
 
 
 # get all requests
-@app.get('/requests')
+@router.get('/requests')
 def get_requests(db: Session = Depends(get_db)):
     requests = db.query(Requests).all()
     return requests
 
 
 # get requests by id
-@app.get('/requests/{id}')
+@router.get('/requests/{id}')
 def get_request(id: int, db: Session = Depends(get_db)):
     request = db.query(Requests).filter(Requests.id == id).first()
     if not request:
@@ -36,7 +39,7 @@ def get_request(id: int, db: Session = Depends(get_db)):
     return request
 
 
-@app.delete('/requests/{id}')
+@router.delete('/requests/{id}')
 def delete_request(id: int, db: Session = Depends(get_db)):
     request = db.query(Requests).filter(Requests.id == id)    #  ----> query
     if request.first() == None:
@@ -50,7 +53,7 @@ def delete_request(id: int, db: Session = Depends(get_db)):
 
 
 # update requests
-@app.put('/requests/{id}')
+@router.put('/requests/{id}')
 def update_request(id: int, updated_request: Request, db: Session = Depends(get_db)):
     request_query = db.query(Requests).filter(Requests.id == id)    #  ----> querry
     request = request_query.first()                                   #  ----> volunteer object

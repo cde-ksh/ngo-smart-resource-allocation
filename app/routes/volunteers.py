@@ -1,14 +1,17 @@
-from fastapi import FastAPI, HTTPException, status, Response, Depends
+from fastapi import APIRouter, HTTPException, status, Response, Depends
 from sqlalchemy.orm import Session
 from app.models.volunteers import Volunteers       #  ----> SQLAlchemy Model
 from app.database import get_db                    #  ----> database
 from app.schemas.volunteers import Volunteer       #  ----> volunteer Schema
 
 
-app = FastAPI()
+router = APIRouter(
+    prefix="/volunteers",
+    tags=["Volunteers"]
+)
 
 # add Volunteers
-@app.post('/volunteers')
+@router.post('/volunteers')
 def create_volunteer(volunteer: Volunteer, db: Session = Depends(get_db)):
     new_volunteer = Volunteers(**volunteer.model_dump())
     db.add(new_volunteer)
@@ -18,14 +21,14 @@ def create_volunteer(volunteer: Volunteer, db: Session = Depends(get_db)):
 
 
 # get Volunteers 
-@app.get("/volunteers")
+@router.get("/volunteers")
 def get_volunteers(db: Session = Depends(get_db)):
     volunteers = db.query(Volunteers).all()        #  ----> all volunteers 
     return {"Volunteer Data": volunteers}
 
 
 # get Volunteers by id
-@app.get("/volunteers/{id}")
+@router.get("/volunteers/{id}")
 def get_volunteers(id: int, db: Session = Depends(get_db)):
     volunteer = db.query(Volunteers).filter(Volunteers.id == id).first()  #  ----> object
     if not volunteer:
@@ -37,7 +40,7 @@ def get_volunteers(id: int, db: Session = Depends(get_db)):
 
 
 # delete Volunteers
-@app.delete("/volunteers/{id}")
+@router.delete("/volunteers/{id}")
 def delete_volunteers(id: int, db: Session = Depends(get_db)):
     volunteer = db.query(Volunteers).filter(Volunteers.id == id)    #  ----> query
     if volunteer.first() == None:
@@ -51,7 +54,7 @@ def delete_volunteers(id: int, db: Session = Depends(get_db)):
         
 
 # update Volunteers
-@app.put("/volunteers/{id}")
+@router.put("/volunteers/{id}")
 def update_volunteer(id: int, updated_volunteer: Volunteer, db: Session = Depends(get_db)):
     volunteer_query = db.query(Volunteers).filter(Volunteers.id == id)    #  ----> querry
     volunteer = volunteer_query.first()                                   #  ----> volunteer object
