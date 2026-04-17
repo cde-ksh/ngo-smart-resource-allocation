@@ -11,7 +11,7 @@ router = APIRouter(
 )
 
 # add Volunteers
-@router.post('/volunteers')
+@router.post('/')
 def create_volunteer(volunteer: Volunteer, db: Session = Depends(get_db)):
     new_volunteer = Volunteers(**volunteer.model_dump())
     db.add(new_volunteer)
@@ -21,14 +21,14 @@ def create_volunteer(volunteer: Volunteer, db: Session = Depends(get_db)):
 
 
 # get Volunteers 
-@router.get("/volunteers")
+@router.get("/")
 def get_volunteers(db: Session = Depends(get_db)):
     volunteers = db.query(Volunteers).all()        #  ----> all volunteers 
     return {"Volunteer Data": volunteers}
 
 
 # get Volunteers by id
-@router.get("/volunteers/{id}")
+@router.get("/{id}")
 def get_volunteers(id: int, db: Session = Depends(get_db)):
     volunteer = db.query(Volunteers).filter(Volunteers.id == id).first()  #  ----> object
     if not volunteer:
@@ -40,7 +40,7 @@ def get_volunteers(id: int, db: Session = Depends(get_db)):
 
 
 # delete Volunteers
-@router.delete("/volunteers/{id}")
+@router.delete("/{id}")
 def delete_volunteers(id: int, db: Session = Depends(get_db)):
     volunteer = db.query(Volunteers).filter(Volunteers.id == id)    #  ----> query
     if volunteer.first() == None:
@@ -54,7 +54,7 @@ def delete_volunteers(id: int, db: Session = Depends(get_db)):
         
 
 # update Volunteers
-@router.put("/volunteers/{id}")
+@router.put("/{id}")
 def update_volunteer(id: int, updated_volunteer: Volunteer, db: Session = Depends(get_db)):
     volunteer_query = db.query(Volunteers).filter(Volunteers.id == id)    #  ----> querry
     volunteer = volunteer_query.first()                                   #  ----> volunteer object

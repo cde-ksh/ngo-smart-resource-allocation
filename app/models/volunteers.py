@@ -55,3 +55,18 @@ class Volunteers(Base):
         nullable=False,
         server_default=func.now()
     )
+
+    state = Column(
+        String(100), 
+        nullable=True
+    )
+
+    district = Column(
+        String(100), 
+        nullable=True
+    )
+
+    transport = Column(
+        String(100), 
+        nullable=True
+    )

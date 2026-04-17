@@ -4,7 +4,7 @@ class Volunteer(BaseModel):
     name: str
     phone: str
     email: str | None = None
-    state: str
+    address: str | None = None
     district: str
     skills: str
     role: str 
