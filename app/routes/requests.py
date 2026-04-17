@@ -11,7 +11,7 @@ router = APIRouter(
 )
 
 # creating requests
-@router.post('/requests')
+@router.post('/')
 def create_requests(request: Request, db: Session = Depends(get_db)):
     new_request = Requests(**request.model_dump())
     db.add(new_request)
@@ -21,14 +21,14 @@ def create_requests(request: Request, db: Session = Depends(get_db)):
 
 
 # get all requests
-@router.get('/requests')
+@router.get('/')
 def get_requests(db: Session = Depends(get_db)):
     requests = db.query(Requests).all()
     return requests
 
 
 # get requests by id
-@router.get('/requests/{id}')
+@router.get('/{id}')
 def get_request(id: int, db: Session = Depends(get_db)):
     request = db.query(Requests).filter(Requests.id == id).first()
     if not request:
@@ -39,7 +39,7 @@ def get_request(id: int, db: Session = Depends(get_db)):
     return request
 
 
-@router.delete('/requests/{id}')
+@router.delete('/{id}')
 def delete_request(id: int, db: Session = Depends(get_db)):
     request = db.query(Requests).filter(Requests.id == id)    #  ----> query
     if request.first() == None:
@@ -53,7 +53,7 @@ def delete_request(id: int, db: Session = Depends(get_db)):
 
 
 # update requests
-@router.put('/requests/{id}')
+@router.put('/{id}')
 def update_request(id: int, updated_request: Request, db: Session = Depends(get_db)):
     request_query = db.query(Requests).filter(Requests.id == id)    #  ----> querry
     request = request_query.first()                                   #  ----> volunteer object

@@ -1,5 +1,6 @@
 from sqlalchemy import Column, String, Integer, Boolean
 from sqlalchemy.sql.sqltypes import TIMESTAMP
+from sqlalchemy import Float, Enum
 from sqlalchemy.sql import func
 from ..database import Base
 
@@ -19,17 +20,22 @@ class Requests(Base):
     )
 
     description = Column(
-        String(200),
+        String,
         nullable=False
     )
 
-    location = Column(
-        String(500),
-        nullable=False
+    latitude = Column(
+        Float, 
+        nullable=True
+    )
+
+    longitude = Column(
+        Float, 
+        nullable=True
     )
 
     urgency = Column(
-        String(50), 
+       Enum("low", "medium", "high", "critical", name="urgency_levels"), 
         nullable=False
     )
 
@@ -43,13 +49,19 @@ class Requests(Base):
         nullable=False
     )
 
-    is_fulfilled = Column(
-        Boolean,
-        default=False
-    )
-
     requested_at = Column(
         TIMESTAMP,
         nullable=False,
         server_default=func.now()
+    )
+
+    status = Column(
+        Enum("pending", "assigned", "completed", "cancelled", name="request_status"),
+        nullable=False,
+        default="pending"
+    )
+
+    assigned_at = Column(
+        TIMESTAMP, 
+        nullable=True
     )
