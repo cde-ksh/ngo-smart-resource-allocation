@@ -33,7 +33,8 @@ def smart_allocate(request_id: int, db: Session = Depends(get_db)):
                 "location": f"{item['volunteer'].district}, {item['volunteer'].state}",
                 "score": item["score"],
                 "distance_km": item["distance"],
-                "matched_skills": item["matched_skills"]
+                "matched_skills": item["matched_skills"],
+                "reason": item["reason"]
             }
             for item in allocated
         ]

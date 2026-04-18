@@ -143,11 +143,27 @@ def allocate_volunteers_to_request(request_id: int, db: Session):
             req_skills
         )
 
+        active_tasks = getattr(volunteer, "active_tasks", 0)
+
+        reason = []
+
+        if matched_skills > 0:
+            reason.append(f"{matched_skills} skill match")
+
+        if distance < 10:
+            reason.append("nearby")
+
+        if active_tasks == 0:
+            reason.append("low workload")
+
+        final_reason = " + ".join(reason)
+
         scored_volunteers.append({
             "volunteer": volunteer,
             "score": score,
             "distance": round(distance, 2),
-            "matched_skills": matched_skills
+            "matched_skills": matched_skills,
+            "reason": final_reason
         })
 
     # Sort by highest score
