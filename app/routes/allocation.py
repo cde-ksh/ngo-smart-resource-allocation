@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.services import allocate_volunteers_to_request
+from app.services.allocaction_service import allocate_volunteers_to_request
 
 router = APIRouter(
     prefix="/allocation",
@@ -28,10 +28,13 @@ def smart_allocate(request_id: int, db: Session = Depends(get_db)):
         "message": "Smart volunteer allocation completed",
         "allocated_volunteers": [
             {
-                "id": v.id,
-                "name": v.name,
-                "location": v.location
+                "id": item["volunteer"].id,
+                "name": item["volunteer"].name,
+                "location": f"{item['volunteer'].district}, {item['volunteer'].state}",
+                "score": item["score"],
+                "distance_km": item["distance"],
+                "matched_skills": item["matched_skills"]
             }
-            for v in allocated
+            for item in allocated
         ]
     }

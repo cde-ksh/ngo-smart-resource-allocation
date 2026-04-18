@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.models.requests import Requests
 from app.models.volunteers import Volunteers
 from app.routes.requests import Request
-from app.services import allocate_volunteers_to_request
+from app.services.allocaction_service import allocate_volunteers_to_request
 
 
 def allocate_all_sessions(db: Session):
