@@ -5,6 +5,9 @@ import { Building2, Mail, Lock, ArrowLeft } from 'lucide-react';
 const NGOCredentials = () => {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("test@ngo.com");
+  const [password, setPassword] = useState("123456");
+
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -26,8 +29,8 @@ const NGOCredentials = () => {
           {!isLogin && (
             <input type="text" placeholder="Organization Name" className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white" required />
           )}
-          <input type="email" placeholder="Official Email" className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white" required />
-          <input type="password" placeholder="Password" className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white" required />
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Official Email" className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white" required />
+          <input type="password" value={password} placeholder="Password" onChange={(e) => setPassword(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white" required />
           
           <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-all">
             {isLogin ? 'Login to Portal' : 'Create Account'}

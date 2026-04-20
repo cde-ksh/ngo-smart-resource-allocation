@@ -1,14 +1,14 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import LandingPage from './component/Landingpage';
-import LoginCredential from './component/LoginCredential';
-import Volunteer from './component/Volunteer';
-import NgoProfile from './component/NgoProfile';
-import VolunteerDashboard from './component/VolunteerDashboard';
-import VolunteerProfile from './component/VolunteerProfile';
-import NGODashboard from './component/NGODashboard';
-import ImpactMap from './component/ImpactMap';
-import FieldReport from './component/FieldReport';
+import LandingPage from './components/Landingpage';
+import LoginCredential from './components/LoginCredential';
+import Volunteer from "./components/Volunteer";
+import NgoProfile from "./components/NgoProfile";
+import VolunteerDashboard from "./components/VolunteerDashboard";
+import VolunteerProfile from "./components/VolunteerProfile";
+import NGODashboard from "./components/NGODashboard";
+import ImpactMap from "./components/ImpactMap";
+import FieldReport from "./components/FieldReport";
 
 function App() {
   return (

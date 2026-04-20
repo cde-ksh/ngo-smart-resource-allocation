@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from app.database import engine, Base
-from app.routes import volunteers, requests
+from app.routes import volunteers, requests, allocation
 from fastapi.middleware.cors import CORSMiddleware
+from app.routes import matching
 
 Base.metadata.create_all(bind=engine)
 
@@ -24,3 +25,5 @@ def root():
 
 app.include_router(volunteers.router)
 app.include_router(requests.router)
+app.include_router(allocation.router)
+app.include_router(matching.router)

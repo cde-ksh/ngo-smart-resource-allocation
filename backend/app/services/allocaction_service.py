@@ -2,17 +2,18 @@ from math import radians, sin, cos, sqrt, atan2
 from sqlalchemy.orm import Session
 from app.models.volunteers import Volunteers
 from app.models.requests import Requests
-from app.services.data_loader import population_map, rainfall_map   # ✅ add rainfall_map
+from app.services.data_loader import population_map, rainfall_map
 
 
-# config
+# ---------------- CONFIG ---------------- #
+
 WEIGHTS = {
     "skill": 10,
     "distance": 1,
     "experience": 3,
     "workload": 5,
-    "population": 1,   # NEW (kept small; we’ll scale separately)
-    "rainfall": 1      # NEW
+    "population": 1,
+    "rainfall": 1
 }
 
 URGENCY_WEIGHT = {
@@ -26,11 +27,14 @@ MAX_DISTANCE = 50   # km
 MAX_TASKS = 3
 
 
+# ---------------- HELPERS ---------------- #
+
 def calculate_distance(lat1, lon1, lat2, lon2):
     if None in [lat1, lon1, lat2, lon2]:
         return MAX_DISTANCE
 
     earth_radius = 6371
+
     dlat = radians(lat2 - lat1)
     dlon = radians(lon2 - lon1)
 
@@ -48,12 +52,21 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 def calculate_volunteer_score(volunteer, request, req_skills):
     score = 0
 
-    # ---- Skills ----
     volunteer_skills = [
         skill.strip().lower()
         for skill in (volunteer.skills or "").split(",")
     ]
-    matched_skills = len(set(req_skills).intersection(volunteer_skills))
+
+    # ✅ improved skill matching (partial)
+    matched_skills = sum(
+        1 for rs in req_skills
+        for vs in volunteer_skills
+        if rs in vs or vs in rs
+    )
+
+    if matched_skills == 0:
+        return None  # reject irrelevant volunteers
+
     score += matched_skills * WEIGHTS["skill"]
 
     # ---- Distance ----
@@ -63,6 +76,7 @@ def calculate_volunteer_score(volunteer, request, req_skills):
         request.latitude,
         request.longitude
     )
+
     distance_score = max(0, (MAX_DISTANCE - distance))
     score += distance_score * WEIGHTS["distance"]
 
@@ -74,13 +88,12 @@ def calculate_volunteer_score(volunteer, request, req_skills):
     active_tasks = getattr(volunteer, "active_tasks", 0)
     score -= active_tasks * WEIGHTS["workload"]
 
-    # ---- Context (district-based) ----
+    # ---- Context ----
     district = (request.district or "").strip().lower()
 
     population = population_map.get(district, 0)
     rainfall = rainfall_map.get(district, 0)
 
-    # Population scaling (coarse buckets)
     if population > 10_000_000:
         score += 15 * WEIGHTS["population"]
     elif population > 1_000_000:
@@ -88,7 +101,6 @@ def calculate_volunteer_score(volunteer, request, req_skills):
     elif population > 500_000:
         score += 5 * WEIGHTS["population"]
 
-    # Rainfall scaling (based on your Avg_rainfall; adjust thresholds if needed)
     if rainfall > 200:
         score += 15 * WEIGHTS["rainfall"]
     elif rainfall > 100:
@@ -96,21 +108,23 @@ def calculate_volunteer_score(volunteer, request, req_skills):
     elif rainfall > 50:
         score += 5 * WEIGHTS["rainfall"]
 
-    # ---- Urgency multiplier (apply last) ----
+    # ---- Urgency ----
     urgency_multiplier = URGENCY_WEIGHT.get(request.urgency, 1)
     score *= urgency_multiplier
 
     return score, distance, matched_skills, population, rainfall
 
 
+# ---------------- MAIN FUNCTION ---------------- #
+
 def allocate_volunteers_to_request(request_id: int, db: Session):
 
-    request = db.query(Requests).filter(
-        Requests.id == request_id
-    ).first()
+    request = db.query(Requests).filter(Requests.id == request_id).first()
 
     if not request:
         return None
+
+    required = request.volunteers_required or 1
 
     req_skills = [
         skill.strip().lower()
@@ -127,23 +141,23 @@ def allocate_volunteers_to_request(request_id: int, db: Session):
 
     for volunteer in available_volunteers:
 
-        # Skip overloaded volunteers early
+        # skip overloaded
         if getattr(volunteer, "active_tasks", 0) >= MAX_TASKS:
             continue
 
-        score, distance, matched_skills, population, rainfall = calculate_volunteer_score(
-            volunteer,
-            request,
-            req_skills
-        )
+        result = calculate_volunteer_score(volunteer, request, req_skills)
 
-        # Hard distance cutoff
+        if result is None:
+            continue
+
+        score, distance, matched_skills, population, rainfall = result
+
         if distance > MAX_DISTANCE:
             continue
 
         active_tasks = getattr(volunteer, "active_tasks", 0)
 
-        # ---- Reason (explainability) ----
+        # ---- Reason ----
         reason = []
 
         if matched_skills > 0:
@@ -161,53 +175,75 @@ def allocate_volunteers_to_request(request_id: int, db: Session):
         if rainfall > 100:
             reason.append("heavy rainfall")
 
-        final_reason = " + ".join(reason)
+        final_reason = " + ".join(reason) if reason else "general allocation"
 
         scored_volunteers.append({
             "volunteer": volunteer,
             "score": round(score, 2),
             "distance": round(distance, 2),
             "matched_skills": matched_skills,
-            "population": population,   # optional
-            "rainfall": round(rainfall, 2),  # optional
             "reason": final_reason
         })
 
-    # Rank
-    scored_volunteers.sort(
-        key=lambda item: item["score"],
-        reverse=True
-    )
+    # ---------------- FALLBACK ---------------- #
+    if not scored_volunteers:
+        # relax distance constraint
+        for volunteer in available_volunteers:
 
-    # Select top N
-    selected = scored_volunteers[: request.volunteers_required]
+            if getattr(volunteer, "active_tasks", 0) >= MAX_TASKS:
+                continue
+
+            result = calculate_volunteer_score(volunteer, request, req_skills)
+            if result is None:
+                continue
+
+            score, distance, matched_skills, _, _ = result
+
+            scored_volunteers.append({
+                "volunteer": volunteer,
+                "score": round(score, 2),
+                "distance": round(distance, 2),
+                "matched_skills": matched_skills,
+                "reason": "fallback allocation"
+            })
+
+    # ---------------- SORT ---------------- #
+    scored_volunteers.sort(key=lambda x: x["score"], reverse=True)
+
+    selected = scored_volunteers[:required]
 
     if not selected:
         return []
 
     allocated = []
 
-    for item in selected:
-        volunteer = item["volunteer"]
+    try:
+        for item in selected:
+            volunteer = item["volunteer"]
 
-        if not volunteer.availability:
-            continue
+            if not volunteer.availability:
+                continue
 
-        volunteer.active_tasks = getattr(
-            volunteer,
-            "active_tasks",
-            0
-        ) + 1
+            volunteer.active_tasks = getattr(volunteer, "active_tasks", 0) + 1
 
-        if volunteer.active_tasks >= MAX_TASKS:
-            volunteer.availability = False
+            if volunteer.active_tasks >= MAX_TASKS:
+                volunteer.availability = False
 
-        volunteer.assigned_request_id = request.id
-        allocated.append(item)
+            volunteer.assigned_request_id = request.id
+            allocated.append(item)
 
-    request.status = "assigned"
+        # ---------------- STATUS LOGIC ---------------- #
+        if len(allocated) >= required:
+            request.is_fulfilled = True
+            request.status = "fulfilled"
+        else:
+            request.status = "partial"
 
-    db.commit()
+        db.commit()
+
+    except Exception as e:
+        db.rollback()
+        raise e
 
     for item in allocated:
         db.refresh(item["volunteer"])
