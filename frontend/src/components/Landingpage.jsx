@@ -21,7 +21,7 @@ const LandingPage = () => {
 
       <div className="lg:w-1/2 bg-slate-900 flex flex-col justify-center px-12 py-20 space-y-6">
         <motion.div 
-          onClick={() => navigate('/ngo-auth')}
+          onClick={() => navigate('/ngo-login')}
           whileHover={{ scale: 1.02 }}
           className="p-8 bg-slate-800 rounded-3xl border border-slate-700 cursor-pointer hover:border-indigo-500 transition-all group"
         >
@@ -40,7 +40,7 @@ const LandingPage = () => {
         </motion.div>
 
         <motion.div 
-          onClick={() => navigate('/volunteer-auth')}
+          onClick={() => navigate('/volunteer-login')}
           whileHover={{ scale: 1.02 }}
           className="p-8 bg-slate-800 rounded-3xl border border-slate-700 cursor-pointer hover:border-cyan-500 transition-all group"
         >

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Response, Depends
 from sqlalchemy.orm import Session 
 from app.models.requests import Requests
-from app.schemas.requests import Request
+from app.schemas.requests import RequestCreate, RequestUpdate
 from app.database import get_db 
 
 
@@ -11,12 +11,14 @@ router = APIRouter(
 )
 
 # creating requests
-@router.post('/')
-def create_requests(request: Request, db: Session = Depends(get_db)):
+@router.post("/")
+def create_requests(request: RequestCreate, db: Session = Depends(get_db)):
     new_request = Requests(**request.model_dump())
+
     db.add(new_request)
     db.commit()
     db.refresh(new_request)
+
     return new_request
 
 
@@ -53,15 +55,39 @@ def delete_request(id: int, db: Session = Depends(get_db)):
 
 
 # update requests
-@router.put('/{id}')
-def update_request(id: int, updated_request: Request, db: Session = Depends(get_db)):
-    request_query = db.query(Requests).filter(Requests.id == id)    #  ----> querry
-    request = request_query.first()                                   #  ----> volunteer object
+@router.put("/{id}")
+def update_request(id: int, updated_request: RequestUpdate, db: Session = Depends(get_db)):
+    request = db.query(Requests).filter(
+        Requests.id == id
+    ).first()
+
     if not request:
-        raise HTTPException (
-            status_code = status.HTTP_404_NOT_FOUND,
-            detail = f"The request with id {id} is not found"
+        raise HTTPException(
+            status_code=404,
+            detail="Request not found"
         )
-    request_query.update(updated_request.model_dump(), synchronize_session=False)
+
+    update_data = updated_request.model_dump(
+        exclude_unset=True
+    )
+
+    for key, value in update_data.items():
+        setattr(request, key, value)
+
     db.commit()
-    return request_query.first()
+    db.refresh(request)
+
+    return request
+
+
+
+@router.get("/search/")
+def search_requests(
+    q: str,
+    db: Session = Depends(get_db)
+):
+    results = db.query(Requests).filter(
+        Requests.title.ilike(f"%{q}%")
+    ).all()
+
+    return results

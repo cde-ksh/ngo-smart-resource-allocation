@@ -9,7 +9,11 @@ router = APIRouter()
 
 @router.get("/match-volunteers/{request_id}")
 def match(request_id: int, db: Session = Depends(get_db)):
-    request = db.query(Requests).get(request_id)
+    request = db.query(Requests).filter(
+    Requests.id == request_id
+).first()
     volunteers = db.query(Volunteers).all()
+    if not request:
+        return {"message": "Request not found"}
 
     return match_volunteers(request, volunteers)

@@ -1,175 +1,315 @@
 import { useEffect, useState } from "react";
-import { getVolunteers } from "../api/api";
+import axios from "axios";
+import { MapContainer, TileLayer, Marker } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
 
 function VolunteerDashboard() {
-  const [volunteers, setVolunteers] = useState([]);
+  // DASHBOARD STATS
+  const [stats, setStats] = useState({
+    ngos: 0,
+    emergencies: 0,
+    requirements: 0,
+  });
 
+  // VOLUNTEER PROFILE
+  const [profile, setProfile] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    address: "",
+    skills: "",
+    role: "",
+    availability: true,
+    state: "",
+    district: "",
+    transport: "bike",
+  });
+
+  // NGO / REQUEST LIST
+  const [ngos, setNgos] = useState([]);
+  const [search, setSearch] = useState("");
+
+  // DEFAULT MAP LOCATION
+  const [location] = useState({
+    lat: 28.6139,
+    lng: 77.209,
+  });
+
+  /*
+  ======================================
+  FETCH VOLUNTEER PROFILE
+  ======================================
+  */
   useEffect(() => {
-    getVolunteers().then((data) => {
-      setVolunteers(data["Volunteer Data"] || []);
-    });
+    axios
+      .get("http://127.0.0.1:8000/volunteers/1")
+      .then((res) => {
+        if (res.data?.data) {
+          setProfile(res.data.data);
+        }
+      })
+      .catch((err) => {
+        console.log("Volunteer fetch error:", err);
+      });
   }, []);
 
+  /*
+  ======================================
+  FETCH DASHBOARD STATS
+  (temporary fallback values)
+  ======================================
+  */
+  useEffect(() => {
+    setStats({
+      ngos: ngos.length,
+      emergencies: 8,
+      requirements: ngos.length,
+    });
+  }, [ngos]);
+
+  /*
+  ======================================
+  SEARCH REQUESTS / NGOs
+  ======================================
+  */
+
+  useEffect(() => {
+    if (search.trim() === "") {
+      axios
+        .get("http://127.0.0.1:8000/requests/")
+        .then((res) => {
+          setNgos(res.data || []);
+        })
+        .catch((err) => {
+          console.log("Requests fetch error:", err);
+        });
+
+      return;
+    }
+
+    const delay = setTimeout(() => {
+      axios
+        .get(`http://127.0.0.1:8000/requests/search/?q=${search}`)
+        .then((res) => {
+          setNgos(res.data || []);
+        })
+        .catch((err) => {
+          console.log("Search error:", err);
+        });
+    }, 400);
+
+    return () => clearTimeout(delay);
+  }, [search]);
+
+  /*
+  ======================================
+  UPDATE PROFILE
+  ======================================
+  */
+
+  const handleProfileUpdate = async () => {
+    try {
+      await axios.put(
+        "http://127.0.0.1:8000/volunteers/1",
+        profile
+      );
+
+      alert("Profile Updated Successfully");
+    } catch (error) {
+      console.log(error);
+      alert("Update Failed");
+    }
+  };
+
+  /*
+  ======================================
+  ASSIGN VOLUNTEER TO REQUEST
+  ======================================
+  */
+
+  const handleAssign = async (requestId) => {
+    try {
+      await axios.post(
+        `http://127.0.0.1:8000/assign/${requestId}/1`
+      );
+
+      alert("Assigned Successfully");
+    } catch (error) {
+      console.log(error);
+      alert("Assignment Failed");
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex">
+    <div className="min-h-screen bg-slate-950 text-white p-6 space-y-8">
+      {/* HEADER */}
+      <div>
+        <h1 className="text-3xl font-bold">
+          Volunteer Dashboard
+        </h1>
+      </div>
 
-      {/* SIDEBAR */}
-      <aside className="w-64 bg-slate-900 border-r border-slate-800 p-6 flex flex-col justify-between">
-        <div>
-          <h2 className="text-xl font-bold mb-8">Helpers Hub</h2>
-
-          <nav className="space-y-4 text-sm">
-            <div className="text-cyan-400">Dashboard</div>
-            <div className="text-slate-400">Your Tasks</div>
-            <div className="text-slate-400">Open Opportunities</div>
-            <div className="text-slate-400">Volunteer Network</div>
-            <div className="text-slate-400">Settings</div>
-          </nav>
+      {/* TOP STATS */}
+      <div className="grid grid-cols-3 gap-6">
+        <div className="bg-slate-900 p-6 rounded-xl">
+          <p className="text-sm text-slate-400">
+            NGOs Near You
+          </p>
+          <h2 className="text-2xl font-bold">
+            {stats.ngos}
+          </h2>
         </div>
 
-        <button className="text-sm text-slate-400">Log out</button>
-      </aside>
-
-      {/* MAIN */}
-      <main className="flex-1 p-8 space-y-8">
-
-        {/* HEADER */}
-        <div>
-          <h1 className="text-3xl font-bold">Welcome Back</h1>
-          <p className="text-slate-400">Your impact makes a difference</p>
+        <div className="bg-slate-900 p-6 rounded-xl">
+          <p className="text-sm text-slate-400">
+            Critical Cases (India)
+          </p>
+          <h2 className="text-2xl font-bold">
+            {stats.emergencies}
+          </h2>
         </div>
 
-        {/* STATS */}
-        <div className="grid grid-cols-3 gap-6">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-            <p className="text-sm text-slate-400">Hours Logged</p>
-            <p className="text-2xl font-bold">34</p>
-          </div>
-
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-            <p className="text-sm text-slate-400">Events</p>
-            <p className="text-2xl font-bold">7</p>
-          </div>
-
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-            <p className="text-sm text-slate-400">People Helped</p>
-            <p className="text-2xl font-bold">21</p>
-          </div>
+        <div className="bg-slate-900 p-6 rounded-xl">
+          <p className="text-sm text-slate-400">
+            Total Requirements
+          </p>
+          <h2 className="text-2xl font-bold">
+            {stats.requirements}
+          </h2>
         </div>
+      </div>
 
-        {/* MAIN CONTENT SPLIT */}
-        <div className="grid grid-cols-3 gap-6">
+      {/* MAIN GRID */}
+      <div className="grid grid-cols-3 gap-6">
+        {/* LEFT SIDE */}
+        <div className="space-y-6">
+          {/* MAP */}
+          <div className="bg-slate-900 p-4 rounded-xl">
+            <p className="mb-2">Your Location</p>
 
-          {/* LEFT PANEL */}
-          <div className="col-span-1 space-y-6">
-
-            {/* TASKS */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-              <h3 className="font-semibold mb-4">Your Tasks</h3>
-
-              <div className="space-y-4">
-                <div className="bg-slate-800 p-4 rounded-lg">
-                  <p className="font-medium">Food Distribution</p>
-                  <p className="text-xs text-slate-400 mt-1">In Progress</p>
-                </div>
-
-                <div className="bg-slate-800 p-4 rounded-lg">
-                  <p className="font-medium">Medical Camp</p>
-                  <p className="text-xs text-slate-400 mt-1">Upcoming</p>
-                </div>
-              </div>
-            </div>
-
-            {/* OPPORTUNITIES */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-              <h3 className="font-semibold mb-4">Open Opportunities</h3>
-
-              <div className="space-y-4">
-                <div className="bg-slate-800 p-4 rounded-lg">
-                  <p className="font-medium">Community Clean-Up</p>
-                  <p className="text-xs text-slate-400 mt-1">4 slots left</p>
-                  <button className="mt-3 text-xs bg-slate-700 px-3 py-1 rounded hover:bg-slate-600">
-                    Sign Up
-                  </button>
-                </div>
-
-                <div className="bg-slate-800 p-4 rounded-lg">
-                  <p className="font-medium">Elderly Care Visits</p>
-                  <p className="text-xs text-slate-400 mt-1">Ongoing</p>
-                  <button className="mt-3 text-xs bg-slate-700 px-3 py-1 rounded hover:bg-slate-600">
-                    Sign Up
-                  </button>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          {/* RIGHT PANEL */}
-          <div className="col-span-2">
-
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-semibold">Volunteer Network</h3>
-
-              <input
-                type="text"
-                placeholder="Search volunteers"
-                className="bg-slate-900 border border-slate-800 px-3 py-1 rounded text-sm"
+            <MapContainer
+              center={[location.lat, location.lng]}
+              zoom={10}
+              className="h-48 rounded"
+            >
+              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <Marker
+                position={[location.lat, location.lng]}
               />
-            </div>
+            </MapContainer>
+          </div>
 
-            {/* GRID */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {volunteers.map((v) => (
+          {/* PROFILE */}
+          <div className="bg-slate-900 p-4 rounded-xl space-y-3">
+            <p className="font-semibold">
+              Your Profile
+            </p>
+
+            <input
+              value={profile.skills || ""}
+              className="w-full bg-slate-800 p-2 rounded"
+              placeholder="Skills"
+              onChange={(e) =>
+                setProfile({
+                  ...profile,
+                  skills: e.target.value,
+                })
+              }
+            />
+
+            <input
+              value={profile.role || ""}
+              className="w-full bg-slate-800 p-2 rounded"
+              placeholder="Role"
+              onChange={(e) =>
+                setProfile({
+                  ...profile,
+                  role: e.target.value,
+                })
+              }
+            />
+
+            <input
+              value={profile.district || ""}
+              className="w-full bg-slate-800 p-2 rounded"
+              placeholder="District"
+              onChange={(e) =>
+                setProfile({
+                  ...profile,
+                  district: e.target.value,
+                })
+              }
+            />
+
+            <select
+              value={profile.transport || "bike"}
+              className="w-full bg-slate-800 p-2 rounded"
+              onChange={(e) =>
+                setProfile({
+                  ...profile,
+                  transport: e.target.value,
+                })
+              }
+            >
+              <option value="bike">Bike</option>
+              <option value="car">Car</option>
+            </select>
+
+            <button
+              onClick={handleProfileUpdate}
+              className="bg-cyan-600 w-full py-2 rounded"
+            >
+              Update Profile
+            </button>
+          </div>
+        </div>
+
+        {/* RIGHT SIDE */}
+        <div className="col-span-2 space-y-6">
+          {/* SEARCH */}
+          <input
+            className="w-full bg-slate-900 p-3 rounded"
+            placeholder="Search NGOs or emergencies..."
+            value={search}
+            onChange={(e) =>
+              setSearch(e.target.value)
+            }
+          />
+
+          {/* NGO / REQUEST LIST */}
+          <div className="grid grid-cols-2 gap-6">
+            {ngos.length === 0 ? (
+              <p className="text-slate-400">
+                No matching NGOs or requests found.
+              </p>
+            ) : (
+              ngos.map((ngo) => (
                 <div
-                  key={v.id}
-                  className="bg-slate-900 border border-slate-800 rounded-xl p-5"
+                  key={ngo.id}
+                  className="bg-slate-900 p-4 rounded-xl"
                 >
                   <p className="font-semibold">
-                    {v.name || v.email}
+                    {ngo.title || ngo.name}
                   </p>
 
                   <p className="text-sm text-slate-400 mt-2">
-                    Skills: {v.skills}
+                    Need: {ngo.required_skills}
                   </p>
 
-                  <div className="flex justify-between items-center mt-4">
-                    <span
-                      className={`text-xs px-2 py-1 rounded ${
-                        v.availability
-                          ? "bg-green-500/10 text-green-400"
-                          : "bg-red-500/10 text-red-400"
-                      }`}
-                    >
-                      {v.availability ? "Available" : "Busy"}
-                    </span>
-
-                    <button className="bg-slate-700 px-3 py-1 text-xs rounded hover:bg-slate-600">
-                      Assign
-                    </button>
-                  </div>
+                  <button
+                    onClick={() =>
+                      handleAssign(ngo.id)
+                    }
+                    className="mt-3 bg-green-600 px-3 py-1 rounded text-sm"
+                  >
+                    Help / Assign
+                  </button>
                 </div>
-              ))}
-            </div>
-
+              ))
+            )}
           </div>
-
         </div>
-
-        {/* URGENT */}
-        <div className="bg-red-900/20 border border-red-700 rounded-xl p-6 flex justify-between items-center">
-          <div>
-            <p className="text-sm text-red-400 font-semibold">URGENT</p>
-            <p className="font-medium">Flood Relief Mission - Main City</p>
-            <p className="text-xs text-slate-400">Immediate help required</p>
-          </div>
-
-          <button className="bg-red-600 px-4 py-2 rounded text-sm">
-            View
-          </button>
-        </div>
-
-      </main>
+      </div>
     </div>
   );
 }

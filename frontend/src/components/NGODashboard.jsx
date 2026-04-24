@@ -3,17 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
-  Users,
   Map,
   Search,
   Plus,
   LogOut,
   X,
-  Activity,
-  CheckCircle,
   Camera,
-  Package,
-  HandHelping,
 } from "lucide-react";
 
 import {
@@ -26,62 +21,91 @@ const NGODashboard = () => {
   const navigate = useNavigate();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [missionName, setMissionName] = useState("");
-  const [missionZone, setMissionZone] = useState("");
   const [missions, setMissions] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 🔹 Fetch missions from backend
-  useEffect(() => {
-    fetchMissions();
-  }, []);
+  // form state
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    required_skills: "",
+    volunteers_required: 1,
+    urgency: "high",
+  });
+
+  /*
+  =====================================
+  FETCH REQUESTS
+  =====================================
+  */
 
   const fetchMissions = async () => {
     try {
       const data = await getRequests();
-      setMissions(data);
-    } catch (err) {
-      console.error("Failed to fetch missions:", err);
+
+      // backend may return wrapped or direct response
+      setMissions(data.data || data || []);
+    } catch (error) {
+      console.log("Fetch requests failed:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  // 🔹 Create mission (POST → backend)
+  useEffect(() => {
+    fetchMissions();
+  }, []);
+
+  
+
+
+  /*
+  =====================================
+  CREATE REQUEST
+  =====================================
+  */
+
   const handleCreateMission = async (e) => {
     e.preventDefault();
 
-    const data = {
-      title: missionName,
-      location: missionZone,
-      urgency: "high",
-    };
-
     try {
-      await createRequest(data);
+      await createRequest(formData);
+
       await fetchMissions();
 
+      setFormData({
+        title: "",
+        description: "",
+        required_skills: "",
+        volunteers_required: 1,
+        urgency: "high",
+      });
+
       setIsModalOpen(false);
-      setMissionName("");
-      setMissionZone("");
-    } catch (err) {
-      console.error("Mission creation failed:", err);
+    } catch (error) {
+      console.log("Create request failed:", error);
     }
   };
 
-  // 🔹 Allocate volunteers
-  const handleAllocate = async (id) => {
+  /*
+  =====================================
+  SMART ALLOCATION
+  =====================================
+  */
+
+  const handleAllocate = async (requestId) => {
     try {
-      await allocateRequest(id);
+      await allocateRequest(requestId);
+      alert("Smart Allocation Completed");
       await fetchMissions();
-    } catch (err) {
-      console.error("Allocation failed:", err);
+    } catch (error) {
+      console.log("Allocation failed:", error);
+      alert("Allocation Failed");
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 flex font-sans overflow-hidden">
-
       {/* SIDEBAR */}
       <aside className="w-64 border-r border-slate-800 bg-slate-900/50 hidden lg:flex flex-col p-6">
         <div className="text-xl font-bold text-white mb-10">
@@ -94,26 +118,36 @@ const NGODashboard = () => {
             <span>Operations Hub</span>
           </div>
 
-          <div onClick={() => navigate("/impact-map")} className="cursor-pointer p-3">
-            <Map size={20} /> Live Need Map
+          <div
+            onClick={() => navigate("/impact-map")}
+            className="cursor-pointer p-3 flex items-center gap-2"
+          >
+            <Map size={20} />
+            <span>Live Need Map</span>
           </div>
         </nav>
 
-        <button onClick={() => navigate("/")} className="text-red-400 p-3">
-          <LogOut size={20} /> Exit
+        <button
+          onClick={() => navigate("/")}
+          className="text-red-400 p-3 flex items-center gap-2"
+        >
+          <LogOut size={20} />
+          <span>Exit</span>
         </button>
       </aside>
 
       {/* MAIN */}
       <main className="flex-1 overflow-y-auto">
-
         {/* HEADER */}
         <header className="h-20 border-b border-slate-800 flex items-center justify-between px-8">
           <div className="relative w-72">
-            <Search size={16} className="absolute left-3 top-2.5" />
+            <Search
+              size={16}
+              className="absolute left-3 top-3"
+            />
             <input
-              placeholder="Search..."
-              className="w-full bg-slate-900 border rounded py-2 pl-10"
+              placeholder="Search requests..."
+              className="w-full bg-slate-900 border border-slate-700 rounded py-2 pl-10 pr-4"
             />
           </div>
 
@@ -121,24 +155,28 @@ const NGODashboard = () => {
             onClick={() => setIsModalOpen(true)}
             className="bg-cyan-600 px-4 py-2 rounded"
           >
-            <Plus size={16} /> Launch Mission
+            <Plus size={16} />
+            Launch Mission
           </button>
         </header>
 
+        {/* CONTENT */}
         <div className="p-8">
+          <h1 className="text-2xl font-bold mb-6">
+            Community Missions
+          </h1>
 
-          {/* TITLE */}
-          <h1 className="text-2xl font-bold mb-6">Community Missions</h1>
-
-          {/* TABLE */}
           {loading ? (
-            <p>Loading...</p>
+            <p>Loading missions...</p>
+          ) : missions.length === 0 ? (
+            <p>No missions found.</p>
           ) : (
             <table className="w-full text-left">
               <thead>
                 <tr className="text-slate-400 text-sm">
-                  <th>Task</th>
-                  <th>Location</th>
+                  <th>Title</th>
+                  <th>Required Skills</th>
+                  <th>Urgency</th>
                   <th>Status</th>
                   <th>Action</th>
                 </tr>
@@ -146,15 +184,21 @@ const NGODashboard = () => {
 
               <tbody>
                 {missions.map((m) => (
-                  <tr key={m.id} className="border-t border-slate-800">
+                  <tr
+                    key={m.id}
+                    className="border-t border-slate-800"
+                  >
                     <td>{m.title}</td>
-                    <td>{m.location}</td>
+                    <td>{m.required_skills}</td>
+                    <td>{m.urgency}</td>
                     <td>{m.status}</td>
 
                     <td>
                       <button
-                        onClick={() => handleAllocate(m.id)}
-                        className="bg-cyan-600 px-2 py-1 rounded text-xs"
+                        onClick={() =>
+                          handleAllocate(m.id)
+                        }
+                        className="bg-cyan-600 px-3 py-1 rounded text-xs"
                       >
                         Allocate
                       </button>
@@ -165,10 +209,10 @@ const NGODashboard = () => {
             </table>
           )}
 
-          {/* EXTRA UI (kept from your design) */}
           <div className="mt-12">
-            <h3 className="text-xl font-bold text-white mb-6">
-              <Camera size={20} /> Action Proof Gallery
+            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+              <Camera size={20} />
+              Action Proof Gallery
             </h3>
           </div>
         </div>
@@ -181,33 +225,79 @@ const NGODashboard = () => {
             <motion.div
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
-              className="bg-slate-900 p-6 rounded w-96"
+              className="bg-slate-900 p-6 rounded w-[420px]"
             >
-              <button onClick={() => setIsModalOpen(false)}>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="mb-4"
+              >
                 <X />
               </button>
 
-              <h2 className="text-lg mb-4">Create Mission</h2>
+              <h2 className="text-lg mb-4">
+                Create Mission
+              </h2>
 
-              <form onSubmit={handleCreateMission}>
+              <form
+                onSubmit={handleCreateMission}
+                className="space-y-3"
+              >
                 <input
-                  value={missionName}
-                  onChange={(e) => setMissionName(e.target.value)}
-                  placeholder="Task"
-                  className="w-full mb-3 p-2 bg-slate-800"
+                  placeholder="Mission Title"
+                  value={formData.title}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      title: e.target.value,
+                    })
+                  }
+                  className="w-full p-2 bg-slate-800 rounded"
+                  required
+                />
+
+                <textarea
+                  placeholder="Description"
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      description: e.target.value,
+                    })
+                  }
+                  className="w-full p-2 bg-slate-800 rounded"
                   required
                 />
 
                 <input
-                  value={missionZone}
-                  onChange={(e) => setMissionZone(e.target.value)}
-                  placeholder="Location"
-                  className="w-full mb-3 p-2 bg-slate-800"
+                  placeholder="Required Skills"
+                  value={formData.required_skills}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      required_skills: e.target.value,
+                    })
+                  }
+                  className="w-full p-2 bg-slate-800 rounded"
                   required
                 />
 
-                <button className="w-full bg-cyan-600 py-2">
-                  Create
+                <input
+                  type="number"
+                  placeholder="Volunteers Required"
+                  value={formData.volunteers_required}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      volunteers_required:
+                        Number(e.target.value),
+                    })
+                  }
+                  className="w-full p-2 bg-slate-800 rounded"
+                  required
+                />
+
+                <button className="w-full bg-cyan-600 py-2 rounded">
+                  Create Mission
                 </button>
               </form>
             </motion.div>

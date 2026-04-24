@@ -1,16 +1,35 @@
 def match_volunteers(request, volunteers):
     results = []
 
+    request_skill = (request.required_skills or "").strip().lower()
+
     for v in volunteers:
+        volunteer_skill = (v.skills or "").strip().lower()
+
         score = 0
 
-        if v.skill == request.skill:
+        if request_skill in volunteer_skill:
             score += 50
 
-        # add distance logic here
-        # add availability logic here
+        if v.availability:
+            score += 20
 
-        results.append((v, score))
+        if score > 0:
+            results.append({
+                "volunteer": {
+                    "id": v.id,
+                    "name": v.name,
+                    "skills": v.skills,
+                    "district": v.district,
+                    "state": v.state,
+                    "transport": v.transport
+                },
+                "score": score
+            })
 
-    results.sort(key=lambda x: x[1], reverse=True)
+    results.sort(
+        key=lambda x: x["score"],
+        reverse=True
+    )
+
     return results
