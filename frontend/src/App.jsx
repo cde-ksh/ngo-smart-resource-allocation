@@ -8,9 +8,9 @@ import {
 
 import LandingPage from "./components/Landingpage";
 import LoginCredential from "./components/LoginCredential";
-import Volunteer from "./components/Volunteer";
 import NgoProfile from "./components/NgoProfile";
 import VolunteerDashboard from "./components/VolunteerDashboard";
+import VolunteerLogin from "./components/VolunteerLogin";
 import VolunteerProfile from "./components/VolunteerProfile";
 import NGODashboard from "./components/NGODashboard";
 import ImpactMap from "./components/ImpactMap";
@@ -52,12 +52,6 @@ function App() {
           element={<LoginCredential />}
         />
 
-        {/* VOLUNTEER LOGIN */}
-        <Route
-          path="/volunteer-login"
-          element={<Volunteer />}
-        />
-
         {/* NGO PROFILE */}
         <Route
           path="/ngo-profile/:id"
@@ -85,6 +79,14 @@ function App() {
             <PrivateRoute>
               <VolunteerProfile />
             </PrivateRoute>
+          }
+        />
+
+        {/* Volunteer Login */}
+        <Route
+          path="/volunteer-login"
+          element={
+            <VolunteerLogin />
           }
         />
 

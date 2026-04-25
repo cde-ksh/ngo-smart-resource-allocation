@@ -302,7 +302,7 @@ function VolunteerDashboard() {
                     }
                     className="mt-3 bg-green-600 px-3 py-1 rounded text-sm"
                   >
-                    Help / Assign
+                    Join Mission
                   </button>
                 </div>
               ))
