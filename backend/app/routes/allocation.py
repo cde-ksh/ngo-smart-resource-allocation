@@ -1,0 +1,41 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from app.database import get_db
+from app.services.allocation_service import allocate_volunteers_to_request
+
+router = APIRouter(
+    prefix="/allocation",
+    tags=["Smart Allocation"]
+)
+
+@router.post("/{request_id}")
+def smart_allocate(request_id: int, db: Session = Depends(get_db)):
+    allocated = allocate_volunteers_to_request(request_id, db)
+
+    if allocated is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Request not found"
+        )
+
+    if len(allocated) == 0:
+        return {
+            "message": "No suitable volunteers found",
+            "allocated_volunteers": []
+        }
+
+    return {
+        "message": "Smart volunteer allocation completed",
+        "allocated_volunteers": [
+            {
+                "id": item["volunteer"].id,
+                "name": item["volunteer"].name,
+                "location": f"{item['volunteer'].district}, {item['volunteer'].state}",
+                "score": item["score"],
+                "distance_km": item["distance"],
+                "matched_skills": item["matched_skills"],
+                "reason": item["reason"]
+            }
+            for item in allocated
+        ]
+    }
