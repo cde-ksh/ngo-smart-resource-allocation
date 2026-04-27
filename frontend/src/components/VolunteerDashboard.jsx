@@ -1,17 +1,28 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
 function VolunteerDashboard() {
-  // DASHBOARD STATS
+  const navigate = useNavigate();
+
+  /*
+  ======================================
+  DASHBOARD STATS
+  ======================================
+  */
   const [stats, setStats] = useState({
     ngos: 0,
     emergencies: 0,
     requirements: 0,
   });
 
-  // VOLUNTEER PROFILE
+  /*
+  ======================================
+  VOLUNTEER PROFILE
+  ======================================
+  */
   const [profile, setProfile] = useState({
     name: "",
     phone: "",
@@ -25,11 +36,19 @@ function VolunteerDashboard() {
     transport: "bike",
   });
 
-  // NGO / REQUEST LIST
+  /*
+  ======================================
+  NGO / REQUEST LIST
+  ======================================
+  */
   const [ngos, setNgos] = useState([]);
   const [search, setSearch] = useState("");
 
-  // DEFAULT MAP LOCATION
+  /*
+  ======================================
+  DEFAULT MAP LOCATION
+  ======================================
+  */
   const [location] = useState({
     lat: 28.6139,
     lng: 77.209,
@@ -55,24 +74,9 @@ function VolunteerDashboard() {
 
   /*
   ======================================
-  FETCH DASHBOARD STATS
-  (temporary fallback values)
+  FETCH REQUESTS / NGOs
   ======================================
   */
-  useEffect(() => {
-    setStats({
-      ngos: ngos.length,
-      emergencies: 8,
-      requirements: ngos.length,
-    });
-  }, [ngos]);
-
-  /*
-  ======================================
-  SEARCH REQUESTS / NGOs
-  ======================================
-  */
-
   useEffect(() => {
     if (search.trim() === "") {
       axios
@@ -103,10 +107,22 @@ function VolunteerDashboard() {
 
   /*
   ======================================
+  DASHBOARD STATS UPDATE
+  ======================================
+  */
+  useEffect(() => {
+    setStats({
+      ngos: ngos.length,
+      emergencies: 8,
+      requirements: ngos.length,
+    });
+  }, [ngos]);
+
+  /*
+  ======================================
   UPDATE PROFILE
   ======================================
   */
-
   const handleProfileUpdate = async () => {
     try {
       await axios.put(
@@ -126,14 +142,13 @@ function VolunteerDashboard() {
   ASSIGN VOLUNTEER TO REQUEST
   ======================================
   */
-
   const handleAssign = async (requestId) => {
     try {
       await axios.post(
         `http://127.0.0.1:8000/assign/${requestId}/1`
       );
 
-      alert("Assigned Successfully");
+      alert("Mission Joined Successfully");
     } catch (error) {
       console.log(error);
       alert("Assignment Failed");
@@ -143,14 +158,45 @@ function VolunteerDashboard() {
   return (
     <div className="min-h-screen bg-slate-950 text-white p-6 space-y-8">
       {/* HEADER */}
-      <div>
-        <h1 className="text-3xl font-bold">
-          Volunteer Dashboard
-        </h1>
+      <div className="flex justify-between items-center flex-wrap gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">
+            Volunteer Dashboard
+          </h1>
+          <p className="text-slate-400 mt-1">
+            Welcome back, {profile.name || "Volunteer"}
+          </p>
+        </div>
+
+        {/* QUICK ACTION BUTTONS */}
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => navigate("/volunteer-profile/1")}
+            className="bg-cyan-600 hover:bg-cyan-500 px-5 py-2 rounded-xl font-semibold transition"
+          >
+            My Profile
+          </button>
+
+          <button
+            onClick={() => navigate("/field-report")}
+            className="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-5 py-2 rounded-xl font-semibold transition"
+          >
+            Field Report
+          </button>
+
+          <button
+            onClick={() =>
+              alert("Availability update feature coming soon")
+            }
+            className="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-5 py-2 rounded-xl font-semibold transition"
+          >
+            Update Availability
+          </button>
+        </div>
       </div>
 
       {/* TOP STATS */}
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-slate-900 p-6 rounded-xl">
           <p className="text-sm text-slate-400">
             NGOs Near You
@@ -180,12 +226,14 @@ function VolunteerDashboard() {
       </div>
 
       {/* MAIN GRID */}
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* LEFT SIDE */}
         <div className="space-y-6">
           {/* MAP */}
           <div className="bg-slate-900 p-4 rounded-xl">
-            <p className="mb-2">Your Location</p>
+            <p className="mb-2 font-semibold">
+              Your Location
+            </p>
 
             <MapContainer
               center={[location.lat, location.lng]}
@@ -199,7 +247,7 @@ function VolunteerDashboard() {
             </MapContainer>
           </div>
 
-          {/* PROFILE */}
+          {/* PROFILE UPDATE */}
           <div className="bg-slate-900 p-4 rounded-xl space-y-3">
             <p className="font-semibold">
               Your Profile
@@ -257,7 +305,7 @@ function VolunteerDashboard() {
 
             <button
               onClick={handleProfileUpdate}
-              className="bg-cyan-600 w-full py-2 rounded"
+              className="bg-cyan-600 hover:bg-cyan-500 w-full py-2 rounded font-semibold"
             >
               Update Profile
             </button>
@@ -265,7 +313,7 @@ function VolunteerDashboard() {
         </div>
 
         {/* RIGHT SIDE */}
-        <div className="col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6">
           {/* SEARCH */}
           <input
             className="w-full bg-slate-900 p-3 rounded"
@@ -277,7 +325,7 @@ function VolunteerDashboard() {
           />
 
           {/* NGO / REQUEST LIST */}
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {ngos.length === 0 ? (
               <p className="text-slate-400">
                 No matching NGOs or requests found.
@@ -288,7 +336,7 @@ function VolunteerDashboard() {
                   key={ngo.id}
                   className="bg-slate-900 p-4 rounded-xl"
                 >
-                  <p className="font-semibold">
+                  <p className="font-semibold text-lg">
                     {ngo.title || ngo.name}
                   </p>
 
@@ -300,7 +348,7 @@ function VolunteerDashboard() {
                     onClick={() =>
                       handleAssign(ngo.id)
                     }
-                    className="mt-3 bg-green-600 px-3 py-1 rounded text-sm"
+                    className="mt-4 bg-green-600 hover:bg-green-500 px-4 py-2 rounded text-sm font-semibold transition"
                   >
                     Join Mission
                   </button>
