@@ -19,7 +19,7 @@ const VolunteerLogin = () => {
     // Replace later with backend auth
     const fakeVolunteerId = 1;
 
-    navigate(`/volunteer-profile/${fakeVolunteerId}`);
+    navigate("/volunteer-dashboard");
   };
 
   return (
