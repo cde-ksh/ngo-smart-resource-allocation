@@ -4,29 +4,60 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from urllib.parse import quote_plus
 
-# encoding password
 load_dotenv()
+
+# ================================
+# ENV VARIABLES
+# ================================
+
 db_user = os.getenv("DB_USER")
-db_password = quote_plus(os.getenv("DB_PASSWORD"))
+db_password = quote_plus(
+    os.getenv("DB_PASSWORD", "")
+)
+db_host = os.getenv("DB_HOST")
 db_name = os.getenv("DB_NAME")
 
-# creating engine
-DATABASE_URL = f"mysql+pymysql://{db_user}:{db_password}@localhost/{db_name}"
-engine = create_engine(DATABASE_URL)
+# ================================
+# DATABASE URL
+# ================================
 
-# creating base class
+DATABASE_URL = (
+    f"mysql+pymysql://{db_user}:{db_password}"
+    f"@{db_host}/{db_name}"
+)
+
+# ================================
+# ENGINE
+# ================================
+
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True
+)
+
+# ================================
+# BASE CLASS
+# ================================
+
 Base = declarative_base()
 
-# session template
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# ================================
+# SESSION
+# ================================
 
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine
+)
 
-# dependency generator
+# ================================
+# DB DEPENDENCY
+# ================================
+
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
-
-
